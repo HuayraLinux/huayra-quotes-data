@@ -1,36 +1,138 @@
 var fs = require('fs');
-var XmlStream = require('xml-stream');
-var counter = 0;
+var path = require('path');
+var sax = require('sax');
+var Datastore = require('nedb');
+var db = new Datastore({filename: 'data/db.nedb', autoload: true});
+var xmlFile = path.resolve(__dirname, "eswikiquote-20150406-pages-articles.xml");
 
-var stream=fs.createReadStream('eswikiquote-20150406-pages-articles.xml');
-var xml = new XmlStream(stream);
+var pages = [];
+var pageCount = 1;
+var pageLimit = -1;
 
-var index = {};
+var inPage = false;
+var inTitle = false;
+var inText = false;
 
-xml.preserve('title', true);
+var lastPage = {};
 
-xml.on('endElement: page', function(item) {
-  var title = item.title['$text'];
-  var id = item.id;
-  var text = item.revision.text['$text'];
-  var target_filename = "data/" + id + ".txt";
+function sanitizeString(str){
+  str = str.replace(/[¿?¡!áéíóúñü:\/ \.,_-]/gim, "");
+  return str.trim();
+}
 
-  counter +=1;
-  //console.log('----------');
-  //console.log(title);
-  //console.log(id);
+function isPageToSave(page) {
+  var title = page.title;
 
-  console.log("Creando: " + target_filename);
-  fs.writeFileSync(target_filename, text);
-  
-
-  index[id] = title;
-
-  if (counter > 5) {
-    var data = {pages: index};
-    var filename = 'data/index.json';
-    console.log("Generando el archivo " + filename);
-    fs.writeFileSync(filename, JSON.stringify(data));
-    process.exit(0);
+  if (/#REDIRECT /.test(page.text)) {
+    return false;
   }
+
+  if (/Wikiquote/.test(title))
+    return false;
+
+  if (/Plantilla/.test(title))
+    return false;
+
+  if (/MediaWiki/.test(title))
+    return false;
+
+  if (/Categoría/.test(title))
+    return false;
+
+  return true;
+}
+
+db.remove({}, {multi: true});
+
+var saxStream = sax.createStream(true);
+
+saxStream.on("error", function (e) {
 });
+
+saxStream.on("opentag", function(node) {
+
+  if (node.name === "page") {
+    inPage = true;
+    lastPage = {};
+  }
+
+  if (node.name === "title") {
+    inTitle = true;
+  }
+
+  if (node.name === "text") {
+    inText = true;
+  }
+
+});
+
+saxStream.on("closetag", function(node) {
+
+  if (node === 'page') {
+
+    if (isPageToSave(lastPage)) {
+      pageCount += 1;
+      pages.push({id: lastPage.id, title: lastPage.title});
+
+      db.insert({id: lastPage.id, title: lastPage.title}, function(err, data) {
+        if (err) {
+          console.error(err);
+        }
+      });
+
+      inPage = false;
+
+      var target_filename = "data/" + lastPage.id + ".txt";
+      //console.log("Creando: " + target_filename);
+      fs.writeFileSync(target_filename, lastPage.text);
+
+      if (pageLimit !== -1) {
+        if (pageCount > pageLimit) {
+          save_and_exit();
+        }
+      }
+    }
+
+  }
+
+  if (node === 'title') {
+    inTitle = false;
+  }
+
+  if (node === "text") {
+    inText = false;
+  }
+
+});
+
+saxStream.on('text', function(text) {
+
+  if (inTitle) {
+    lastPage.title = text;
+    lastPage.id = sanitizeString(text);
+  }
+
+  if (inText) {
+    lastPage.text = text;
+  }
+
+});
+
+saxStream.on('end', function() {
+  save_and_exit();
+});
+
+function save_and_exit() {
+  var filename = 'data/index.json';
+  var data = {pages: pages};
+
+  //console.log("Generando el archivo " + filename);
+  fs.writeFileSync(filename, JSON.stringify(data));
+
+  db.count({}, function(err, data) {
+    console.log("Se han creado " + data + " registros.");
+    process.exit(0);
+  });
+}
+
+fs.createReadStream(xmlFile).pipe(saxStream);

@@ -18,5 +18,9 @@
   "homepage": "https://github.com/hugoruscitti/huayra-quotes-data",
   "devDependencies": {
     "xml-stream": "^0.4.5"
+  },
+  "dependencies": {
+    "nedb": "^1.1.2",
+    "sax": "^1.1.1"
   }
 }
