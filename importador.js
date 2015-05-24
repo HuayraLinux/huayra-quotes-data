@@ -124,10 +124,10 @@ saxStream.on('end', function() {
 
 function save_and_exit() {
   var filename = 'data/index.json';
-  var data = {pages: pages};
+  //var data = {pages: pages};
 
   //console.log("Generando el archivo " + filename);
-  fs.writeFileSync(filename, JSON.stringify(data));
+  //fs.writeFileSync(filename, JSON.stringify(data));
 
   db.count({}, function(err, data) {
     console.log("Se han creado " + data + " registros.");
