@@ -123,7 +123,7 @@ saxStream.on('end', function() {
 });
 
 function save_and_exit() {
-  var filename = 'data/index.json';
+  //var filename = 'data/index.json';
   //var data = {pages: pages};
 
   //console.log("Generando el archivo " + filename);
