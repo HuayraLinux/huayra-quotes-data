@@ -20,10 +20,26 @@ function sanitizeString(str){
   return str.trim();
 }
 
+function getCategory(page) {
+  var rx = /[[Categoría:(.*)]]/g;
+  var arr = rx.exec(page.text);
+  console.log(arr);
+
+  if (arr && arr.length > 0) {
+    return arr[1]; 
+  } else {
+    return "";
+  }
+}
+
 function isPageToSave(page) {
   var title = page.title;
 
-  if (/#REDIRECT /.test(page.text)) {
+  if (/#REDIRECT/.test(page.text)) {
+    return false;
+  }
+
+  if (/#REDIRECCIÓN/.test(page.text)) {
     return false;
   }
 
@@ -71,6 +87,8 @@ saxStream.on("closetag", function(node) {
   if (node === 'page') {
 
     if (isPageToSave(lastPage)) {
+      var category = getCategory(lastPage);
+
       pageCount += 1;
       pages.push({id: lastPage.id, title: lastPage.title});
 
