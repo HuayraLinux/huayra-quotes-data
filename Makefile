@@ -5,6 +5,10 @@ B=[01;34m
 
 all: clear_data import copy_data
 
+
+download:
+	wget https://dumps.wikimedia.org/eswikiquote/20150406/eswikiquote-20150406-pages-articles.xml.bz2
+
 import:
 	@echo "${G}Ejecutando el importador ...${N}"
 	@node importador.js
