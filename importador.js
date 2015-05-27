@@ -21,12 +21,11 @@ function sanitizeString(str){
 }
 
 function getCategory(page) {
-  var rx = /[[Categoría:(.*)]]/g;
+  var rx = /\[\[Categoría:(.*)\]\]/g;
   var arr = rx.exec(page.text);
-  console.log(arr);
 
   if (arr && arr.length > 0) {
-    return arr[1]; 
+    return arr[1].split("|")[0]; 
   } else {
     return "";
   }
@@ -92,7 +91,7 @@ saxStream.on("closetag", function(node) {
       pageCount += 1;
       pages.push({id: lastPage.id, title: lastPage.title});
 
-      db.insert({id: lastPage.id, title: lastPage.title}, function(err, data) {
+      db.insert({id: lastPage.id, title: lastPage.title, category: category}, function(err, data) {
         if (err) {
           console.error(err);
         }
