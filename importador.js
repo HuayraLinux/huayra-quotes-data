@@ -1,8 +1,10 @@
 var fs = require('fs');
 var path = require('path');
 var sax = require('sax');
-var Datastore = require('nedb');
-var db = new Datastore({filename: 'data/db.nedb', autoload: true});
+
+var loki = require('lokijs');
+var db = new loki('data/db.json');
+var index_collection = db.addCollection('index');
 var xmlFile = path.resolve(__dirname, "eswikiquote-20150406-pages-articles.xml");
 
 var pages = [];
@@ -25,7 +27,7 @@ function getCategory(page) {
   var arr = rx.exec(page.text);
 
   if (arr && arr.length > 0) {
-    return arr[1].split("|")[0]; 
+    return arr[1].split("|")[0];
   } else {
     return "";
   }
@@ -56,8 +58,6 @@ function isPageToSave(page) {
 
   return true;
 }
-
-db.remove({}, {multi: true});
 
 var saxStream = sax.createStream(true);
 
@@ -91,11 +91,10 @@ saxStream.on("closetag", function(node) {
       pageCount += 1;
       pages.push({id: lastPage.id, title: lastPage.title});
 
-      db.insert({id: lastPage.id, title: lastPage.title, category: category}, function(err, data) {
-        if (err) {
-          console.error(err);
-        }
-      });
+      index_collection.insert({id: lastPage.id,
+                               title: lastPage.title,
+                               category: category
+                              });
 
       inPage = false;
 
@@ -146,8 +145,9 @@ function save_and_exit() {
   //console.log("Generando el archivo " + filename);
   //fs.writeFileSync(filename, JSON.stringify(data));
 
-  db.count({}, function(err, data) {
-    console.log("Se han creado " + data + " registros.");
+  db.saveDatabase(function(err) {
+    var n = index_collection.find({}).length;
+    console.log("Se ha creado la base de datos con " + n + " registros.");
     process.exit(0);
   });
 }

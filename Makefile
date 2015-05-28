@@ -7,7 +7,9 @@ all: download clear_data import copy_data
 
 
 download:
+	rm -r -f eswikiquote-20150406-pages-articles.xml.bz2
 	wget https://dumps.wikimedia.org/eswikiquote/20150406/eswikiquote-20150406-pages-articles.xml.bz2
+	rm -r -f eswikiquote-20150406-pages-articles.xml
 	bzip2 -d eswikiquote-20150406-pages-articles.xml.bz2
 
 import:
