@@ -3,11 +3,12 @@ G=[01;32m
 Y=[01;33m
 B=[01;34m
 
-all: clear_data import copy_data
+all: download clear_data import copy_data
 
 
 download:
 	wget https://dumps.wikimedia.org/eswikiquote/20150406/eswikiquote-20150406-pages-articles.xml.bz2
+	bzip2 -d eswikiquote-20150406-pages-articles.xml.bz2
 
 import:
 	@echo "${G}Ejecutando el importador ...${N}"
