@@ -3,14 +3,14 @@ G=[01;32m
 Y=[01;33m
 B=[01;34m
 
-all: iniciar download clear_data import copy_data
+all: iniciar clear_data import copy_data
 
 iniciar:
 	npm install
 	make download
 
 download:
-	rm -f *.xml{,.bz2}
+	rm -f *.{xml,xml.bz2}
 	wget https://dumps.wikimedia.org/eswikiquote/20150406/eswikiquote-20150406-pages-articles.xml.bz2
 	bzip2 -d eswikiquote-20150406-pages-articles.xml.bz2
 
