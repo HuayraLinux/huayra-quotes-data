@@ -10,9 +10,10 @@ iniciar:
 	make download
 
 download:
-	rm -f *.{xml,xml.bz2}
-	wget https://dumps.wikimedia.org/eswikiquote/20150406/eswikiquote-20150406-pages-articles.xml.bz2
-	bzip2 -d eswikiquote-20150406-pages-articles.xml.bz2
+	rm -f *.xml.bz2
+	rm -f *.xml
+	wget https://dumps.wikimedia.org/eswikiquote/latest/eswikiquote-latest-pages-articles.xml.bz2
+	bzip2 -d eswikiquote-latest-pages-articles.xml.bz2
 
 import:
 	@echo "${G}Ejecutando el importador ...${N}"

@@ -1,11 +1,12 @@
 var fs = require('fs');
 var path = require('path');
 var sax = require('sax');
+var slug = require('slug');
 
 var loki = require('lokijs');
 var db = new loki('data/db.json');
 var index_collection = db.addCollection('index');
-var xmlFile = path.resolve(__dirname, "eswikiquote-20150406-pages-articles.xml");
+var xmlFile = path.resolve(__dirname, "eswikiquote-latest-pages-articles.xml");
 
 var pages = [];
 var pageCount = 1;
@@ -18,8 +19,7 @@ var inText = false;
 var lastPage = {};
 
 function sanitizeString(str){
-  str = str.replace(/[¿?¡!áéíóúñü:\/ \.,_-]/gim, "");
-  return str.trim();
+  return slug(str);
 }
 
 function getCategory(page) {
