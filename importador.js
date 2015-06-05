@@ -23,7 +23,7 @@ function sanitizeString(str){
 }
 
 function getCategory(page) {
-  var rx = /\[\[Categoría:(.*)\]\]/g;
+  var rx = /\[\[Categoría:(.[^\]]*)\]\]/g;
   var arr = rx.exec(page.text);
 
   if (arr && arr.length > 0) {
@@ -35,7 +35,7 @@ function getCategory(page) {
 
 function isPageToSave(page) {
   var title = page.title;
-
+/*
   if (/#REDIRECT/.test(page.text)) {
     return false;
   }
@@ -43,6 +43,7 @@ function isPageToSave(page) {
   if (/#REDIRECCIÓN/.test(page.text)) {
     return false;
   }
+*/
 
   if (/Wikiquote/.test(title))
     return false;
@@ -93,7 +94,8 @@ saxStream.on("closetag", function(node) {
 
       index_collection.insert({id: lastPage.id,
                                title: lastPage.title,
-                               slug: slug(lastPage.title),
+                               redirect: lastPage.redirect||"",
+                               slug: slug(lastPage.title, ' '),
                                category: category
                               });
 
@@ -131,6 +133,13 @@ saxStream.on('text', function(text) {
 
   if (inText) {
     lastPage.text = text;
+  }
+
+  if ( /#REDIRECT/.test(lastPage.text) || /#REDIRECCIÓN/.test(lastPage.text) ) {
+    match = text.match(/\[\[(.[^\]]*)\]\]/i);
+    if( match ){
+      lastPage.redirect = slug(match[1]);
+    }
   }
 
 });
