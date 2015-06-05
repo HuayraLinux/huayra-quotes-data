@@ -93,6 +93,7 @@ saxStream.on("closetag", function(node) {
 
       index_collection.insert({id: lastPage.id,
                                title: lastPage.title,
+                               slug: slug(lastPage.title),
                                category: category
                               });
 
