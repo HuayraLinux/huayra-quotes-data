@@ -1,11 +1,12 @@
 var fs = require('fs');
 var path = require('path');
 var sax = require('sax');
+var slug = require('slug');
 
 var loki = require('lokijs');
 var db = new loki('data/db.json');
 var index_collection = db.addCollection('index');
-var xmlFile = path.resolve(__dirname, "eswikiquote-20150406-pages-articles.xml");
+var xmlFile = path.resolve(__dirname, "eswikiquote-latest-pages-articles.xml");
 
 var pages = [];
 var pageCount = 1;
@@ -18,12 +19,11 @@ var inText = false;
 var lastPage = {};
 
 function sanitizeString(str){
-  str = str.replace(/[¿?¡!áéíóúñü:\/ \.,_-]/gim, "");
-  return str.trim();
+  return slug(str);
 }
 
 function getCategory(page) {
-  var rx = /\[\[Categoría:(.*)\]\]/g;
+  var rx = /\[\[Categoría:(.[^\]]*)\]\]/g;
   var arr = rx.exec(page.text);
 
   if (arr && arr.length > 0) {
@@ -34,29 +34,40 @@ function getCategory(page) {
 }
 
 function isPageToSave(page) {
+  var result = {save: true, save_file: true};
   var title = page.title;
 
+
   if (/#REDIRECT/.test(page.text)) {
-    return false;
+    result.save_file = false;
   }
 
   if (/#REDIRECCIÓN/.test(page.text)) {
-    return false;
+    result.save_file = false;
   }
 
-  if (/Wikiquote/.test(title))
-    return false;
 
-  if (/Plantilla/.test(title))
-    return false;
+  if (/Wikiquote/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
 
-  if (/MediaWiki/.test(title))
-    return false;
+  if (/Plantilla/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
 
-  if (/Categoría/.test(title))
-    return false;
+  if (/MediaWiki/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
 
-  return true;
+  if (/Categoría/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
+
+  return result;
 }
 
 var saxStream = sax.createStream(true);
@@ -82,25 +93,31 @@ saxStream.on("opentag", function(node) {
 });
 
 saxStream.on("closetag", function(node) {
-
+  var pageToSave = false;
   if (node === 'page') {
 
-    if (isPageToSave(lastPage)) {
+    pageToSave = isPageToSave(lastPage);
+    if (pageToSave.save) {
       var category = getCategory(lastPage);
 
       pageCount += 1;
+
       pages.push({id: lastPage.id, title: lastPage.title});
 
       index_collection.insert({id: lastPage.id,
                                title: lastPage.title,
+                               redirect: lastPage.redirect||"",
+                               slug: slug(lastPage.title, ' '),
                                category: category
                               });
 
       inPage = false;
 
-      var target_filename = "data/" + lastPage.id + ".txt";
-      //console.log("Creando: " + target_filename);
-      fs.writeFileSync(target_filename, lastPage.text);
+      if (pageToSave.save_file) {
+        var target_filename = "data/" + lastPage.id + ".txt";
+        //console.log("Creando: " + target_filename);
+        fs.writeFileSync(target_filename, lastPage.text);
+      }
 
       if (pageLimit !== -1) {
         if (pageCount > pageLimit) {
@@ -130,6 +147,13 @@ saxStream.on('text', function(text) {
 
   if (inText) {
     lastPage.text = text;
+  }
+
+  if ( /#REDIRECT/.test(lastPage.text) || /#REDIRECCIÓN/.test(lastPage.text) ) {
+    match = text.match(/\[\[(.[^\]]*)\]\]/i);
+    if( match ){
+      lastPage.redirect = slug(match[1]);
+    }
   }
 
 });
