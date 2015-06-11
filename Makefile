@@ -21,7 +21,7 @@ import:
 copy_data:
 	@echo "${G}Copiando archivos data en ../huayra-quotes/data${N}"
 	@rm -r -f ../huayra-quotes/public/data
-	@cp -r -f data ../huayra-quotes/public/data
+	@cp -r -f -v data ../huayra-quotes/public/data
 
 clear_data:
 	@echo "${G}Limpiando el directorio data${N}"
