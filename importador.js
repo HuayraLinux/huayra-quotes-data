@@ -34,30 +34,40 @@ function getCategory(page) {
 }
 
 function isPageToSave(page) {
+  var result = {save: true, save_file: true};
   var title = page.title;
-/*
+
+
   if (/#REDIRECT/.test(page.text)) {
-    return false;
+    result.save_file = false;
   }
 
   if (/#REDIRECCIÓN/.test(page.text)) {
-    return false;
+    result.save_file = false;
   }
-*/
 
-  if (/Wikiquote/.test(title))
-    return false;
 
-  if (/Plantilla/.test(title))
-    return false;
+  if (/Wikiquote/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
 
-  if (/MediaWiki/.test(title))
-    return false;
+  if (/Plantilla/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
 
-  if (/Categoría/.test(title))
-    return false;
+  if (/MediaWiki/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
 
-  return true;
+  if (/Categoría/.test(title)){
+    result.save_file = false;
+    result.save = false;
+  }
+
+  return result;
 }
 
 var saxStream = sax.createStream(true);
@@ -83,13 +93,15 @@ saxStream.on("opentag", function(node) {
 });
 
 saxStream.on("closetag", function(node) {
-
+  var pageToSave = false;
   if (node === 'page') {
 
-    if (isPageToSave(lastPage)) {
+    pageToSave = isPageToSave(lastPage);
+    if (pageToSave.save) {
       var category = getCategory(lastPage);
 
       pageCount += 1;
+
       pages.push({id: lastPage.id, title: lastPage.title});
 
       index_collection.insert({id: lastPage.id,
@@ -101,9 +113,11 @@ saxStream.on("closetag", function(node) {
 
       inPage = false;
 
-      var target_filename = "data/" + lastPage.id + ".txt";
-      //console.log("Creando: " + target_filename);
-      fs.writeFileSync(target_filename, lastPage.text);
+      if (pageToSave.save_file) {
+        var target_filename = "data/" + lastPage.id + ".txt";
+        //console.log("Creando: " + target_filename);
+        fs.writeFileSync(target_filename, lastPage.text);
+      }
 
       if (pageLimit !== -1) {
         if (pageCount > pageLimit) {
